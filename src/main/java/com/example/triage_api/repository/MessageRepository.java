@@ -17,6 +17,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     List<Message> findByConversationConversationIdOrderBySentAtAsc(UUID conversationId);
 
+    Optional<Message> findTopByConversationConversationIdOrderBySentAtDesc(UUID conversationId);
+
 
     @Query("""
            SELECT COUNT(m) FROM Message m

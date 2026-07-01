@@ -372,6 +372,26 @@ public class ConversationService {
         String otherSenderType = requesterType.equals("PATIENT") ? "DOCTOR" : "PATIENT";
         long unread = messageRepository.countUnread(c.getConversationId(), otherSenderType);
 
+        // Last message preview — sanitise large payloads before sending over the wire
+        Message lastMsg = messageRepository
+                .findTopByConversationConversationIdOrderBySentAtDesc(c.getConversationId())
+                .orElse(null);
+        String lastContent = null;
+        java.time.Instant lastAt = null;
+        if (lastMsg != null) {
+            lastAt = lastMsg.getSentAt();
+            String raw = lastMsg.getContent();
+            if (raw.startsWith("IMG:")) {
+                lastContent = "📷 Photo";
+            } else if (raw.startsWith("VID:")) {
+                lastContent = "🎥 Video";
+            } else if (raw.length() > 100) {
+                lastContent = raw.substring(0, 100) + "…";
+            } else {
+                lastContent = raw;
+            }
+        }
+
         return ConversationResponse.builder()
                 .conversationId(c.getConversationId())
                 .patientId(c.getPatient().getUserId())
@@ -388,6 +408,8 @@ public class ConversationService {
                 .updatedAt(c.getUpdatedAt())
                 .acceptedAt(c.getAcceptedAt())
                 .closedAt(c.getClosedAt())
+                .lastMessageContent(lastContent)
+                .lastMessageAt(lastAt)
                 .build();
     }
 

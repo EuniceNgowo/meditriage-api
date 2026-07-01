@@ -53,4 +53,10 @@ public class ConversationResponse {
 
     @Schema(description = "When the conversation was closed (UTC); null if still open")
     private Instant closedAt;
+
+    @Schema(description = "Preview of the last message sent in this conversation; null if no messages yet")
+    private String lastMessageContent;
+
+    @Schema(description = "When the last message was sent (UTC); null if no messages yet")
+    private Instant lastMessageAt;
 }
