@@ -2,6 +2,7 @@ package com.example.triage_api.controller;
 
 import com.example.triage_api.dto.request.DoctorRegisterRequest;
 import com.example.triage_api.dto.request.LoginRequest;
+import com.example.triage_api.dto.request.UpdateDoctorProfileRequest;
 import com.example.triage_api.dto.response.DoctorResponse;
 import com.example.triage_api.dto.response.JwtResponse;
 import com.example.triage_api.exception.ErrorResponse;
@@ -136,6 +137,57 @@ public class DoctorController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         return ResponseEntity.ok(doctorService.getMyProfile(userDetails.getUsername()));
+    }
+
+
+    @PutMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Update the authenticated doctor's profile",
+               description = "Only non-null fields are updated. Name, specialty, bio, languages spoken, and years of experience can be changed.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Profile updated",
+                     content = @Content(schema = @Schema(implementation = DoctorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid JWT",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<DoctorResponse> updateProfile(
+            @Valid @RequestBody UpdateDoctorProfileRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(doctorService.updateProfile(userDetails.getUsername(), request));
+    }
+
+
+    @DeleteMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Delete (deactivate) the authenticated doctor's own account",
+               description = "Sets isActive = false and status = OFFLINE. The account and data are retained but the doctor can no longer log in or appear in searches.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Account deactivated"),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid JWT",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> deleteMyAccount(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        doctorService.deactivate(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Deactivate any doctor by ID (admin use)",
+               description = "Sets the doctor's isActive = false. Requires a valid JWT. Intended for administrative use via Swagger UI.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Doctor deactivated"),
+        @ApiResponse(responseCode = "404", description = "Doctor not found",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid JWT",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> deactivateDoctorById(
+            @Parameter(description = "Doctor UUID", required = true) @PathVariable UUID id) {
+        doctorService.deactivateById(id);
+        return ResponseEntity.noContent().build();
     }
 
 

@@ -1,6 +1,7 @@
 package com.example.triage_api.service;
 
 import com.example.triage_api.dto.request.DoctorRegisterRequest;
+import com.example.triage_api.dto.request.UpdateDoctorProfileRequest;
 import com.example.triage_api.dto.response.DoctorResponse;
 import com.example.triage_api.exception.BadRequestException;
 import com.example.triage_api.exception.ResourceNotFoundException;
@@ -114,6 +115,47 @@ public class DoctorService {
     @Transactional(readOnly = true)
     public DoctorResponse getMyProfile(String doctorEmail) {
         return mapToResponse(findByEmail(doctorEmail));
+    }
+
+    @Transactional
+    public DoctorResponse updateProfile(String doctorEmail, UpdateDoctorProfileRequest req) {
+        Doctor doctor = findByEmail(doctorEmail);
+        if (req.getFullName() != null && !req.getFullName().isBlank()) {
+            doctor.setFullName(req.getFullName().trim());
+        }
+        if (req.getSpecialty() != null && !req.getSpecialty().isBlank()) {
+            doctor.setSpecialty(req.getSpecialty().trim());
+        }
+        if (req.getBio() != null) {
+            doctor.setBio(req.getBio().trim());
+        }
+        if (req.getLanguagesSpoken() != null && !req.getLanguagesSpoken().isBlank()) {
+            doctor.setLanguagesSpoken(req.getLanguagesSpoken().toUpperCase().trim());
+        }
+        if (req.getYearsExperience() != null) {
+            doctor.setYearsExperience(req.getYearsExperience());
+        }
+        doctorRepository.save(doctor);
+        log.info("Doctor {} updated their profile", doctor.getEmail());
+        return mapToResponse(doctor);
+    }
+
+    @Transactional
+    public void deactivate(String doctorEmail) {
+        Doctor doctor = findByEmail(doctorEmail);
+        doctor.setIsActive(false);
+        doctor.setStatus(DoctorStatus.OFFLINE);
+        doctorRepository.save(doctor);
+        log.info("Doctor {} account deactivated", doctor.getEmail());
+    }
+
+    @Transactional
+    public void deactivateById(UUID doctorId) {
+        Doctor doctor = findById(doctorId);
+        doctor.setIsActive(false);
+        doctor.setStatus(DoctorStatus.OFFLINE);
+        doctorRepository.save(doctor);
+        log.info("Doctor {} account deactivated by admin", doctor.getEmail());
     }
 
     // ─── Rating update (called by ConversationService) ────────────────────

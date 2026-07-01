@@ -1,5 +1,6 @@
 package com.example.triage_api.controller;
 
+import com.example.triage_api.dto.request.UpdateUserProfileRequest;
 import com.example.triage_api.dto.response.SessionResponse;
 import com.example.triage_api.dto.response.UserResponse;
 import com.example.triage_api.exception.ErrorResponse;
@@ -12,7 +13,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -58,5 +61,36 @@ public class UserController {
 
         List<SessionResponse> sessions = sessionService.getUserSessions(userDetails.getUsername());
         return ResponseEntity.ok(sessions);
+    }
+
+
+    @PutMapping("/api/users/me")
+    @Operation(summary = "Update the authenticated patient's profile",
+               description = "Currently supports updating the full name.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Profile updated"),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid JWT",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<UserResponse> updateProfile(
+            @Valid @RequestBody UpdateUserProfileRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(userService.updateProfile(userDetails.getUsername(), request));
+    }
+
+
+    @DeleteMapping("/api/users/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete (deactivate) the authenticated patient's own account",
+               description = "Sets isActive = false. The account is retained in the database but the patient can no longer log in.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Account deactivated"),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid JWT",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> deleteMyAccount(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        userService.deactivate(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
     }
 }
