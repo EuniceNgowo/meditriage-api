@@ -54,7 +54,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     /** Strip non-digit characters then re-prepend '+' if original started with it */
-    static String normalisePhone(String phone) {
+    public static String normalisePhone(String phone) {
         if (phone == null) return "";
         String stripped = phone.strip();
         if (stripped.startsWith("+")) {

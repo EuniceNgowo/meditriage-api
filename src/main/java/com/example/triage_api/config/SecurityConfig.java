@@ -76,8 +76,10 @@ public class SecurityConfig {
                     "/api/doctors/{id}"     // view a specific doctor
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST,
-                    "/api/doctors/register", // doctor self-registration (public)
-                    "/api/doctors/login"     // doctor login (public)
+                    "/api/doctors/register",        // doctor self-registration (public)
+                    "/api/doctors/login",            // doctor login (public)
+                    "/api/doctors/register-phone",   // doctor phone registration (public)
+                    "/api/doctors/login-phone"       // doctor phone login (public)
                 ).permitAll()
                 .requestMatchers(
                     "/api/auth/**",         // register, login, doctor login

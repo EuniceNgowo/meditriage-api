@@ -157,25 +157,18 @@ public class DoctorService {
 
     @Transactional
     public DoctorResponse updateProfile(String doctorEmail, UpdateDoctorProfileRequest req) {
-        Doctor doctor = findByEmail(doctorEmail);
-        if (req.getFullName() != null && !req.getFullName().isBlank()) {
-            doctor.setFullName(req.getFullName().trim());
-        }
-        if (req.getSpecialty() != null && !req.getSpecialty().isBlank()) {
-            doctor.setSpecialty(req.getSpecialty().trim());
-        }
-        if (req.getBio() != null) {
-            doctor.setBio(req.getBio().trim());
-        }
-        if (req.getLanguagesSpoken() != null && !req.getLanguagesSpoken().isBlank()) {
-            doctor.setLanguagesSpoken(req.getLanguagesSpoken().toUpperCase().trim());
-        }
-        if (req.getYearsExperience() != null) {
-            doctor.setYearsExperience(req.getYearsExperience());
-        }
-        doctorRepository.save(doctor);
-        log.info("Doctor {} updated their profile", doctor.getEmail());
-        return mapToResponse(doctor);
+        String fullName  = (req.getFullName() != null && !req.getFullName().isBlank())
+                ? req.getFullName().trim() : null;
+        String specialty = (req.getSpecialty() != null && !req.getSpecialty().isBlank())
+                ? req.getSpecialty().trim() : null;
+        String bio       = req.getBio() != null ? req.getBio().trim() : null;
+        String langs     = (req.getLanguagesSpoken() != null && !req.getLanguagesSpoken().isBlank())
+                ? req.getLanguagesSpoken().toUpperCase().trim() : null;
+
+        int rows = doctorRepository.updateProfile(doctorEmail, fullName, specialty, bio, langs, req.getYearsExperience());
+        if (rows == 0) throw new ResourceNotFoundException("Doctor not found: " + doctorEmail);
+        log.info("Doctor {} updated their profile", doctorEmail);
+        return mapToResponse(findByEmail(doctorEmail));
     }
 
     @Transactional

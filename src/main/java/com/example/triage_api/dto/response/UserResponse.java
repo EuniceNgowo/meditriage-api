@@ -25,4 +25,7 @@ public class UserResponse {
 
     @Schema(description = "Account creation timestamp (UTC)")
     private Instant createdAt;
+
+    @Schema(description = "Whether the account is active")
+    private Boolean isActive;
 }

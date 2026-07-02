@@ -39,6 +39,26 @@ public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
     long countActiveConversations(@Param("doctorId") UUID doctorId);
 
     /** Bypass entity save to avoid Hibernate orphan-removal on conversations collection */
+    /** Bypass entity save to avoid Hibernate orphan-removal on conversations collection */
+    @Modifying
+    @Query(value = """
+        UPDATE doctors SET
+          full_name        = COALESCE(:fullName,   full_name),
+          specialty        = COALESCE(:specialty,  specialty),
+          bio              = COALESCE(:bio,         bio),
+          languages_spoken = COALESCE(:langs,       languages_spoken),
+          years_experience = COALESCE(:yrs,         years_experience)
+        WHERE email = :email
+        """, nativeQuery = true)
+    int updateProfile(
+        @Param("email")    String  email,
+        @Param("fullName") String  fullName,
+        @Param("specialty") String specialty,
+        @Param("bio")      String  bio,
+        @Param("langs")    String  langs,
+        @Param("yrs")      Integer yrs
+    );
+
     @Modifying
     @Query(value = "UPDATE doctors SET is_active = false, status = 'OFFLINE' WHERE email = :email", nativeQuery = true)
     int deactivateByEmail(@Param("email") String email);

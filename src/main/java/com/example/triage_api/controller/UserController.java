@@ -15,6 +15,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -91,6 +95,32 @@ public class UserController {
     public ResponseEntity<Void> deleteMyAccount(
             @AuthenticationPrincipal UserDetails userDetails) {
         userService.deactivate(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    // ─── Admin ────────────────────────────────────────────────────────────
+
+    @GetMapping("/api/admin/patients")
+    @Operation(summary = "[Admin] List all patient accounts",
+               description = "Returns all patients (active and deactivated) sorted by registration date, newest first. Requires any valid JWT.")
+    public ResponseEntity<Page<UserResponse>> listAllPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(userService.listAllPatients(
+                PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @DeleteMapping("/api/admin/patients/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "[Admin] Deactivate a patient account by ID",
+               description = "Sets isActive = false. The patient can no longer log in.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Patient deactivated"),
+        @ApiResponse(responseCode = "404", description = "Patient not found",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> deactivatePatient(@PathVariable UUID id) {
+        userService.deactivateById(id);
         return ResponseEntity.noContent().build();
     }
 }
