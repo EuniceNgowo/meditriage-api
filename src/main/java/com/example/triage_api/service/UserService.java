@@ -48,10 +48,14 @@ public class UserService {
 
     @Transactional
     public void deactivate(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail));
-        user.setIsActive(false);
-        userRepository.save(user);
-        log.info("User {} account deactivated", user.getEmail());
+        int rows = userRepository.deactivateByEmail(userEmail);
+        if (rows == 0) throw new ResourceNotFoundException("User not found: " + userEmail);
+        log.info("User {} account deactivated", userEmail);
+    }
+
+    @Transactional
+    public void changePassword(String userEmail, String newPasswordHash) {
+        int rows = userRepository.updatePassword(userEmail, newPasswordHash);
+        if (rows == 0) throw new ResourceNotFoundException("User not found: " + userEmail);
     }
 }

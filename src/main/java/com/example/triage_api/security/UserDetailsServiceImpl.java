@@ -18,15 +18,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final DoctorRepository doctorRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email)
+    public UserDetails loadUserByUsername(String identifier)
             throws UsernameNotFoundException {
 
-        // Check patient table first
-        java.util.Optional<User> userOpt = userRepository.findByEmail(email);
+        // Check patient table — first by email, then by phone
+        java.util.Optional<User> userOpt = identifier.contains("@")
+                ? userRepository.findByEmail(identifier)
+                : userRepository.findByPhoneNumber(normalisePhone(identifier));
+
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getEmail())
+                    .withUsername(user.getEmail())   // JWT subject is always the stored email
                     .password(user.getPasswordHash())
                     .authorities("ROLE_USER")
                     .disabled(!user.getIsActive())
@@ -34,16 +37,29 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
 
         // Fall back to doctor table
-        Doctor doctor = doctorRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "No account found with email: " + email));
+        Doctor doctor = identifier.contains("@")
+                ? doctorRepository.findByEmail(identifier).orElse(null)
+                : doctorRepository.findByPhoneNumber(normalisePhone(identifier)).orElse(null);
+
+        if (doctor == null) {
+            throw new UsernameNotFoundException("No account found with identifier: " + identifier);
+        }
 
         return org.springframework.security.core.userdetails.User
-                .withUsername(doctor.getEmail())
+                .withUsername(doctor.getEmail())     // JWT subject is always the stored email
                 .password(doctor.getPasswordHash())
                 .authorities("ROLE_DOCTOR")
                 .disabled(!doctor.getIsActive())
                 .build();
+    }
+
+    /** Strip non-digit characters then re-prepend '+' if original started with it */
+    static String normalisePhone(String phone) {
+        if (phone == null) return "";
+        String stripped = phone.strip();
+        if (stripped.startsWith("+")) {
+            return "+" + stripped.substring(1).replaceAll("[^0-9]", "");
+        }
+        return stripped.replaceAll("[^0-9]", "");
     }
 }

@@ -1,7 +1,9 @@
 package com.example.triage_api.service;
 
+import com.example.triage_api.dto.request.DoctorPhoneRegisterRequest;
 import com.example.triage_api.dto.request.DoctorRegisterRequest;
 import com.example.triage_api.dto.request.UpdateDoctorProfileRequest;
+import com.example.triage_api.security.UserDetailsServiceImpl;
 import com.example.triage_api.dto.response.DoctorResponse;
 import com.example.triage_api.exception.BadRequestException;
 import com.example.triage_api.exception.ResourceNotFoundException;
@@ -63,6 +65,42 @@ public class DoctorService {
                 .fullName(doctor.getFullName())
                 .type("Bearer")
                 .token("") // token will be issued by the login flow
+                .build();
+    }
+
+    @Transactional
+    public com.example.triage_api.dto.response.JwtResponse registerByPhone(DoctorPhoneRegisterRequest request) {
+        String phone = UserDetailsServiceImpl.normalisePhone(request.getPhoneNumber());
+        if (phone.isBlank()) throw new BadRequestException("Invalid phone number.");
+
+        if (doctorRepository.existsByPhoneNumber(phone)) {
+            throw new BadRequestException("A doctor account with phone '" + phone + "' already exists.");
+        }
+
+        String syntheticEmail = "ph_" + phone.replaceAll("[^0-9]", "") + "@triage.local";
+
+        Doctor doctor = Doctor.builder()
+                .fullName(request.getFullName())
+                .email(syntheticEmail)
+                .phoneNumber(phone)
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .specialty(request.getSpecialty())
+                .licenseNumber(request.getLicenseNumber())
+                .bio(request.getBio())
+                .yearsExperience(request.getYearsExperience())
+                .languagesSpoken(request.getLanguagesSpoken() != null
+                        ? request.getLanguagesSpoken().toUpperCase() : "EN")
+                .status(DoctorStatus.OFFLINE)
+                .isActive(true)
+                .build();
+
+        doctorRepository.save(doctor);
+        log.info("Doctor registered via phone: {} ({})", doctor.getFullName(), phone);
+
+        return com.example.triage_api.dto.response.JwtResponse.builder()
+                .email(null).phoneNumber(phone)
+                .fullName(doctor.getFullName())
+                .type("Bearer").token("")
                 .build();
     }
 
@@ -142,20 +180,16 @@ public class DoctorService {
 
     @Transactional
     public void deactivate(String doctorEmail) {
-        Doctor doctor = findByEmail(doctorEmail);
-        doctor.setIsActive(false);
-        doctor.setStatus(DoctorStatus.OFFLINE);
-        doctorRepository.save(doctor);
-        log.info("Doctor {} account deactivated", doctor.getEmail());
+        int rows = doctorRepository.deactivateByEmail(doctorEmail);
+        if (rows == 0) throw new ResourceNotFoundException("Doctor not found: " + doctorEmail);
+        log.info("Doctor {} account deactivated", doctorEmail);
     }
 
     @Transactional
     public void deactivateById(UUID doctorId) {
-        Doctor doctor = findById(doctorId);
-        doctor.setIsActive(false);
-        doctor.setStatus(DoctorStatus.OFFLINE);
-        doctorRepository.save(doctor);
-        log.info("Doctor {} account deactivated by admin", doctor.getEmail());
+        int rows = doctorRepository.deactivateById(doctorId);
+        if (rows == 0) throw new ResourceNotFoundException("Doctor not found: " + doctorId);
+        log.info("Doctor {} account deactivated by admin", doctorId);
     }
 
     // ─── Rating update (called by ConversationService) ────────────────────

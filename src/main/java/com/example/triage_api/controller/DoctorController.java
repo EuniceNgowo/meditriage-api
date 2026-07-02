@@ -1,8 +1,6 @@
 package com.example.triage_api.controller;
 
-import com.example.triage_api.dto.request.DoctorRegisterRequest;
-import com.example.triage_api.dto.request.LoginRequest;
-import com.example.triage_api.dto.request.UpdateDoctorProfileRequest;
+import com.example.triage_api.dto.request.*;
 import com.example.triage_api.dto.response.DoctorResponse;
 import com.example.triage_api.dto.response.JwtResponse;
 import com.example.triage_api.exception.ErrorResponse;
@@ -65,16 +63,43 @@ public class DoctorController {
 
 
     @PostMapping("/login")
-    @Operation(summary = "Doctor login",
-               description = "Authenticate with email and password. Copy the returned `token` and use it as `Authorization: Bearer <token>` on all protected endpoints.")
+    @Operation(summary = "Doctor login (email + password)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Login successful — JWT token returned",
+        @ApiResponse(responseCode = "200", description = "JWT token returned",
                      content = @Content(schema = @Schema(implementation = JwtResponse.class))),
         @ApiResponse(responseCode = "401", description = "Invalid email or password",
                      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.doctorLogin(request));
+    }
+
+
+    @PostMapping("/register-phone")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Register a new doctor account (phone number — no email required)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Doctor account created",
+                     content = @Content(schema = @Schema(implementation = JwtResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error or duplicate phone",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<JwtResponse> registerByPhone(@Valid @RequestBody DoctorPhoneRegisterRequest request) {
+        JwtResponse response = doctorService.registerByPhone(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+
+    @PostMapping("/login-phone")
+    @Operation(summary = "Doctor login (phone number + password)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "JWT token returned",
+                     content = @Content(schema = @Schema(implementation = JwtResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials",
+                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<JwtResponse> loginByPhone(@Valid @RequestBody PhoneLoginRequest request) {
+        return ResponseEntity.ok(authService.doctorLoginByPhone(request));
     }
 
 

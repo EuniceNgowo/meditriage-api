@@ -28,4 +28,7 @@ public class JwtResponse {
 
     @Schema(description = "Doctor ID — only present when role is DOCTOR")
     private java.util.UUID doctorId;
+
+    @Schema(description = "Phone number — present when the account was registered with phone instead of email")
+    private String phoneNumber;
 }

@@ -61,6 +61,15 @@ public class User {
     private Instant updatedAt;
 
 
+    @Column(name = "phone_number", length = 20, unique = true)
+    private String phoneNumber;
+
+    @Column(name = "reset_token", length = 6)
+    private String resetToken;
+
+    @Column(name = "reset_token_expires_at")
+    private Instant resetTokenExpiresAt;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL,
                fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
