@@ -141,7 +141,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // Allow the headers our API uses
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(List.of("*"));
 
         // Allow browsers to read the Authorization header from responses
         configuration.setExposedHeaders(List.of("Authorization"));
